@@ -75,7 +75,8 @@ CREATE TABLE IF NOT EXISTS signal_outcomes (
   max_profit_pct   DECIMAL(6,2),
   max_loss_pct     DECIMAL(6,2),
   outcome          VARCHAR(20)   CHECK (outcome IN ('WIN','LOSS','BREAKEVEN','OPEN')),
-  evaluated_at     TIMESTAMP
+  evaluated_at     TIMESTAMP,
+  last_checked_at  TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_outcomes_signal  ON signal_outcomes(signal_id);
