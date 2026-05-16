@@ -38,9 +38,12 @@ async function start(): Promise<void> {
   await redis.connect();
 
   const pgClient = await pool.connect();
-  await pgClient.query('SELECT 1');
-  pgClient.release();
-  console.log('[postgres] connected');
+  try {
+    await pgClient.query('SELECT 1');
+    console.log('[postgres] connected');
+  } finally {
+    pgClient.release();
+  }
 
   app.listen(PORT, () => {
     console.log(`[server] listening on port ${PORT}`);

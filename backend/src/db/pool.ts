@@ -16,12 +16,14 @@ pool.on('error', (err) => {
 });
 
 export async function checkPostgres(): Promise<boolean> {
+  const client = await pool.connect().catch(() => null);
+  if (!client) return false;
   try {
-    const client = await pool.connect();
     await client.query('SELECT 1');
-    client.release();
     return true;
   } catch {
     return false;
+  } finally {
+    client.release();
   }
 }
