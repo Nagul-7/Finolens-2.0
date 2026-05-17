@@ -1,5 +1,14 @@
 # FinoLens v2 — Deferred Fix Tracker
 
+## Hard Rules (never break these)
+
+- **No `.js` extensions on local TypeScript imports in `backend/`.** The backend
+  uses `"module": "CommonJS"` and ts-node-dev (CJS mode) does not remap `.js`
+  to `.ts` source files — it causes `Cannot find module` at startup.
+  Use bare relative paths: `from './db/pool'` not `from './db/pool.js'`.
+  ESLint rule `import/extensions: error` enforces this automatically.
+  If a code generator or template adds `.js` extensions, strip them before committing.
+
 ## Fix Before Section 7 (Routes)
 
 - [ ] Add 2-second timeout to `checkPostgres()` and `checkRedis()` — shorter than
