@@ -1,5 +1,7 @@
-from typing import Any, Generic, Literal, Optional, TypeVar
-from pydantic import BaseModel
+import logging
+from datetime import date
+from typing import Generic, Literal, Optional, TypeVar
+from pydantic import BaseModel, Field, field_validator
 
 T = TypeVar("T")
 
@@ -18,7 +20,7 @@ class ServiceStatus(BaseModel):
 
 
 class OHLCVCandle(BaseModel):
-    date: str
+    date: date
     open: float
     high: float
     low: float
@@ -26,9 +28,31 @@ class OHLCVCandle(BaseModel):
     volume: float
 
 
+_log = logging.getLogger(__name__)
+
+
 class SignalRequest(BaseModel):
+    """
+    Input to the signal engine.
+
+    Minimum 60 candles required (hard limit). 200+ recommended —
+    EMA-50 needs ~150 candles to stabilise, RSI and MACD need ~26.
+    Fewer than 200 candles will produce less reliable signals.
+    """
+
     symbol: str
-    candles: list[OHLCVCandle]
+    candles: list[OHLCVCandle] = Field(min_length=60)
+
+    @field_validator("candles")
+    @classmethod
+    def warn_if_low_candle_count(cls, v: list[OHLCVCandle]) -> list[OHLCVCandle]:
+        if len(v) < 200:
+            _log.warning(
+                "SignalRequest for received only %d candles — "
+                "200+ recommended for stable indicators (EMA-50 needs ~150)",
+                len(v),
+            )
+        return v
 
 
 class IndicatorSnapshot(BaseModel):
