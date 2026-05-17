@@ -2,6 +2,7 @@ import time
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from .schemas import ApiResponse, ServiceStatus, SignalRequest, SignalResponse
@@ -11,7 +12,19 @@ START_TIME = time.monotonic()
 app = FastAPI(title="FinoLens Signal Service", version="2.0.0", docs_url="/docs")
 
 
-# ─── Exception handler — consistent { success, error } shape ─────────────────
+# ─── Exception handlers — consistent { success, error } shape ────────────────
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_req: Request, exc: RequestValidationError) -> JSONResponse:
+    summary = "; ".join(
+        f"{' -> '.join(str(p) for p in e['loc'])}: {e['msg']}"
+        for e in exc.errors()
+    )
+    return JSONResponse(
+        status_code=422,
+        content=ApiResponse[None](success=False, error=summary).model_dump(),
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(_req: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(
