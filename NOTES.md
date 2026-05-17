@@ -20,3 +20,17 @@
       to drain in-flight HTTP requests before closing connections — critical when
       a rollout could interrupt active paper trades
       (`backend/src/server.ts` `shutdown()`)
+
+- [ ] Distinguish `NotImplementedError` (return 501) from unhandled runtime errors
+      (return 500 with masked message) in `global_exception_handler`
+      (`signal-service/app/main.py`)
+
+- [ ] Disable `/docs` in production — set `docs_url=None` when `ENV=production`
+      to prevent API schema exposure (`signal-service/app/main.py`)
+
+- [ ] Add request body size limit middleware — cap at 100KB to prevent oversized
+      candle payloads; apply to all routes (`signal-service/app/main.py`)
+
+- [ ] Replace `time.monotonic()` `START_TIME` with a value read from an env var
+      set at container launch so uptime is consistent across uvicorn workers
+      (`signal-service/app/main.py`)
