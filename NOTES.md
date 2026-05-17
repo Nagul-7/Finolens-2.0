@@ -2,11 +2,12 @@
 
 ## Hard Rules (never break these)
 
+- ~~Add ESLint rule to enforce no `.js` extensions on local imports~~ ✅ done
 - **No `.js` extensions on local TypeScript imports in `backend/`.** The backend
   uses `"module": "CommonJS"` and ts-node-dev (CJS mode) does not remap `.js`
   to `.ts` source files — it causes `Cannot find module` at startup.
   Use bare relative paths: `from './db/pool'` not `from './db/pool.js'`.
-  ESLint rule `import/extensions: error` enforces this automatically.
+  `no-restricted-imports` ESLint rule enforces this — `npm run lint` will catch it.
   If a code generator or template adds `.js` extensions, strip them before committing.
 
 ## Fix Before Section 7 (Routes)
@@ -43,3 +44,15 @@
 - [ ] Replace `time.monotonic()` `START_TIME` with a value read from an env var
       set at container launch so uptime is consistent across uvicorn workers
       (`signal-service/app/main.py`)
+
+- [ ] Change `backend/Dockerfile` to 2-stage build — Stage 1: `npm run build`
+      (produces `dist/`); Stage 2: `node dist/server.js` with no ts-node-dev.
+      Currently runs JIT transpilation in prod which is slow and memory-hungry.
+
+- [ ] Apply same 2-stage pattern to `signal-service/Dockerfile` — Stage 1:
+      install deps; Stage 2: `uvicorn app.main:app` without `--reload`.
+      `--reload` watches the filesystem and recompiles on every change, unsafe in prod.
+
+- [ ] Add `backend` and `signal-service` to `docker-compose.yml` with proper
+      `depends_on` health checks so both services survive terminal close and reboot.
+      Currently running as bare background processes (`&`) that die on shell exit.
