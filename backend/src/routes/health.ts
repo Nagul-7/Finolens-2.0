@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { checkPostgres } from '../db/pool.js';
-import { checkRedis } from '../db/redis.js';
-import { ApiResponse, HealthStatus } from '../types/index.js';
+import { checkPostgres } from '../db/pool';
+import { checkRedis } from '../db/redis';
+import { ApiResponse, HealthStatus } from '../types/index';
 
 const router = Router();
 

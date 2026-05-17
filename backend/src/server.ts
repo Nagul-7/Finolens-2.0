@@ -4,10 +4,10 @@ import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
 
-import { pool } from './db/pool.js';
-import { redis } from './db/redis.js';
-import healthRouter from './routes/health.js';
-import { errorHandler, notFound } from './middleware/errorHandler.js';
+import { pool } from './db/pool';
+import { redis } from './db/redis';
+import healthRouter from './routes/health';
+import { errorHandler, notFound } from './middleware/errorHandler';
 
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
 

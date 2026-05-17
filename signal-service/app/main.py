@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .schemas import ApiResponse, ServiceStatus, SignalRequest, SignalResponse
 
@@ -25,11 +26,27 @@ async def validation_exception_handler(_req: Request, exc: RequestValidationErro
     )
 
 
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(_req: Request, exc: StarletteHTTPException) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ApiResponse[None](success=False, error=str(exc.detail)).model_dump(),
+    )
+
+
+@app.exception_handler(NotImplementedError)
+async def not_implemented_handler(_req: Request, exc: NotImplementedError) -> JSONResponse:
+    return JSONResponse(
+        status_code=501,
+        content=ApiResponse[None](success=False, error=str(exc)).model_dump(),
+    )
+
+
 @app.exception_handler(Exception)
-async def global_exception_handler(_req: Request, exc: Exception) -> JSONResponse:
+async def global_exception_handler(_req: Request, _exc: Exception) -> JSONResponse:
     return JSONResponse(
         status_code=500,
-        content=ApiResponse[None](success=False, error=str(exc)).model_dump(),
+        content=ApiResponse[None](success=False, error="Internal server error").model_dump(),
     )
 
 
