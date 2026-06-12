@@ -63,7 +63,7 @@ async def health() -> ApiResponse[ServiceStatus]:
     )
 
 
-# ─── Signal endpoint (wired up in Section 5) ─────────────────────────────────
+# ─── Signal endpoint ─────────────────────────────────────────────────────────
 @app.post("/signal", response_model=ApiResponse[SignalResponse])
 async def signal(request: SignalRequest) -> ApiResponse[SignalResponse]:
     from .engine import generate_signal  # local import keeps startup fast
