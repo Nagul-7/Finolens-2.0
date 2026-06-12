@@ -20,7 +20,16 @@
       3 attempts at 1s / 2s / 4s delays so a slow Redis startup doesn't fail
       the backend on first boot (`backend/src/server.ts` `start()`)
 
+- [ ] Build instrument_token populator — call Kite `getInstruments()` once a day,
+      update `stocks.instrument_token` so live mode can fetch historical data.
+      Paper mode uses synthetic tokens in `nse_paper_data.json`; live needs the
+      real ones (`backend/src/services/kiteClient.ts` LiveBroker, Section 7).
+
 ## Fix Before Going Live (Production)
+
+- [ ] Auto-refresh Kite token at ~5:30 AM IST (before the ~6 AM expiry) so the
+      app isn't dead each morning until a manual re-auth. LiveBroker already
+      rejects expired sessions (`assertSession`); this is the refresh side.
 
 - [ ] Add range guard to `AppError` constructor — reject `statusCode` outside
       400–599 to prevent malformed HTTP responses
