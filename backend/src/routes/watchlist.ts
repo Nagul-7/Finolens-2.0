@@ -3,14 +3,28 @@ import { pool } from '../db/pool';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { AppError } from '../middleware/errorHandler';
 import { ApiResponse } from '../types/index';
+import { getQuotes } from '../services/quoteService';
 
 const router = Router();
 
-// GET /api/watchlist — stocks on the watchlist with their latest signal
+interface WatchRow {
+  id: number;
+  stock_id: number;
+  notes: string | null;
+  added_at: Date;
+  symbol: string;
+  name: string | null;
+  sector: string | null;
+  latest_signal: string | null;
+  latest_confidence: string | null;
+  latest_signal_at: Date | null;
+}
+
+// GET /api/watchlist — watchlist with latest signal + live quote + sparkline
 router.get(
   '/',
   asyncHandler(async (_req: Request, res: Response) => {
-    const { rows } = await pool.query(
+    const { rows } = await pool.query<WatchRow>(
       `SELECT w.id, w.stock_id, w.notes, w.added_at,
               s.symbol, s.name, s.sector,
               ls.signal_type AS latest_signal,
@@ -27,7 +41,14 @@ router.get(
        ) ls ON true
        ORDER BY w.added_at DESC`,
     );
-    const body: ApiResponse = { success: true, data: rows };
+
+    const quotes = await getQuotes(rows.map((r) => r.symbol));
+    const data = rows.map((r) => ({
+      ...r,
+      quote: quotes[r.symbol] ?? null,
+    }));
+
+    const body: ApiResponse = { success: true, data };
     res.json(body);
   }),
 );

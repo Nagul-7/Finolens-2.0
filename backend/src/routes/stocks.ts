@@ -4,6 +4,7 @@ import { asyncHandler } from '../middleware/asyncHandler';
 import { AppError } from '../middleware/errorHandler';
 import { ApiResponse } from '../types/index';
 import { getBroker } from '../services/kiteClient';
+import { getQuotes } from '../services/quoteService';
 
 const router = Router();
 
@@ -12,6 +13,20 @@ function isoDaysAgo(days: number): string {
   d.setUTCDate(d.getUTCDate() - days);
   return d.toISOString().slice(0, 10);
 }
+
+// GET /api/stocks/:symbol/quote — last price, day change, 30-point sparkline
+router.get(
+  '/:symbol/quote',
+  asyncHandler(async (req: Request, res: Response) => {
+    const symbol = req.params.symbol.toUpperCase();
+    const quotes = await getQuotes([symbol]);
+    if (!quotes[symbol]) {
+      throw new AppError(404, `Stock not found: ${symbol}`);
+    }
+    const body: ApiResponse = { success: true, data: quotes[symbol] };
+    res.json(body);
+  }),
+);
 
 // GET /api/stocks/:symbol/candles?days=260 — OHLCV for charts
 router.get(

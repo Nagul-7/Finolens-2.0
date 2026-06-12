@@ -103,7 +103,7 @@ export default function Intelligence() {
 
   if (!symbol) {
     return (
-      <div className="max-w-screen-xl mx-auto px-6 py-10">
+      <div className="max-w-screen-xl mx-auto px-5 sm:px-6 py-8">
         <h1 className="text-head font-semibold mb-4">Intelligence</h1>
         <p className="text-text-dim text-body mb-4">Search for a stock to analyse.</p>
         <div className="relative w-80">
@@ -133,7 +133,7 @@ export default function Intelligence() {
   }
 
   return (
-    <div className="max-w-screen-xl mx-auto px-6 py-6">
+    <div className="max-w-screen-xl mx-auto px-5 sm:px-6 py-5 sm:py-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-head font-semibold">{symbol}</h1>
         <Button onClick={generate} disabled={generating || loading}>
@@ -143,17 +143,17 @@ export default function Intelligence() {
 
       {error && <div className="text-negative text-body mb-4">{error}</div>}
 
-      <div className="grid grid-cols-10 gap-4">
-        {/* Left 70% — chart */}
-        <div className="col-span-7 space-y-4">
-          <Card className="p-2 h-[460px]">
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+        {/* Left 70% on desktop — chart (stacks on top on mobile) */}
+        <div className="lg:col-span-7 space-y-4">
+          <Card className="p-2 h-[320px] sm:h-[420px] lg:h-[460px]">
             {loading || !candles ? (
               <Skeleton className="w-full h-full" />
             ) : (
               <PriceChart candles={candles} />
             )}
           </Card>
-          <Card className="p-4">
+          <Card className="p-4 sm:p-5">
             <CardLabel>Reasoning</CardLabel>
             <p className="text-body text-text-dim mt-2 leading-relaxed">
               {signal ? signal.reasoning : 'Generate a signal to see the engine’s reasoning.'}
@@ -161,8 +161,8 @@ export default function Intelligence() {
           </Card>
         </div>
 
-        {/* Right 30% — signal + indicators */}
-        <div className="col-span-3 space-y-4">
+        {/* Right 30% on desktop — signal + indicators (below chart on mobile) */}
+        <div className="lg:col-span-3 space-y-4">
           <SignalCard signal={signal} />
           <IndicatorsPanel ind={signal?.ind} />
         </div>
