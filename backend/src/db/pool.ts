@@ -15,7 +15,9 @@ pool.on('error', (err) => {
   console.error('[postgres] unexpected client error:', err.message);
 });
 
-export async function checkPostgres(): Promise<boolean> {
+const HEALTH_TIMEOUT_MS = 2_000; // shorter than Docker's 5s health-check timeout
+
+async function probe(): Promise<boolean> {
   const client = await pool.connect().catch(() => null);
   if (!client) return false;
   try {
@@ -24,6 +26,13 @@ export async function checkPostgres(): Promise<boolean> {
   } catch {
     return false;
   } finally {
-    client.release();
+    client.release(); // releases even if the outer timeout already resolved
   }
+}
+
+export async function checkPostgres(): Promise<boolean> {
+  const timeout = new Promise<boolean>((resolve) =>
+    setTimeout(() => resolve(false), HEALTH_TIMEOUT_MS),
+  );
+  return Promise.race([probe(), timeout]);
 }

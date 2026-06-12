@@ -10,20 +10,18 @@
   `no-restricted-imports` ESLint rule enforces this — `npm run lint` will catch it.
   If a code generator or template adds `.js` extensions, strip them before committing.
 
-## Fix Before Section 7 (Routes)
+## Section 7 prerequisites — DONE
 
-- [ ] Add 2-second timeout to `checkPostgres()` and `checkRedis()` — shorter than
-      Docker's 5s health check default to avoid the race where both timeouts expire
-      simultaneously (`backend/src/db/pool.ts`, `backend/src/db/redis.ts`)
+- [x] 2-second timeout on `checkPostgres()` / `checkRedis()` (Promise.race)
+- [x] Retry loop around `redis.connect()` with 1s/2s/4s backoff (`connectRedisWithRetry`)
+- [x] instrument_token populator — paper version reads `nse_paper_data.json`
+      (`scripts/populateInstrumentTokens.cjs`). Live `getInstruments()` daily
+      refresh still TODO before live mode (see below).
 
-- [ ] Add retry loop around `redis.connect()` with exponential backoff —
-      3 attempts at 1s / 2s / 4s delays so a slow Redis startup doesn't fail
-      the backend on first boot (`backend/src/server.ts` `start()`)
+## Fix Before Going Live (Production)
 
-- [ ] Build instrument_token populator — call Kite `getInstruments()` once a day,
-      update `stocks.instrument_token` so live mode can fetch historical data.
-      Paper mode uses synthetic tokens in `nse_paper_data.json`; live needs the
-      real ones (`backend/src/services/kiteClient.ts` LiveBroker, Section 7).
+- [ ] instrument_token populator for LIVE — call Kite `getInstruments()` once a
+      day to refresh real tokens (paper uses synthetic ones).
 
 ## Fix Before Going Live (Production)
 

@@ -5,8 +5,13 @@ import cors from 'cors';
 import morgan from 'morgan';
 
 import { pool } from './db/pool';
-import { redis } from './db/redis';
+import { redis, connectRedisWithRetry } from './db/redis';
 import healthRouter from './routes/health';
+import stocksRouter from './routes/stocks';
+import watchlistRouter from './routes/watchlist';
+import signalsRouter from './routes/signals';
+import outcomesRouter from './routes/outcomes';
+import authRouter from './routes/auth';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -21,13 +26,11 @@ app.use(express.json());
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/health', healthRouter);
-
-// Placeholder mount points — filled in Section 7
-// app.use('/api/auth',      authRouter);
-// app.use('/api/stocks',    stocksRouter);
-// app.use('/api/watchlist', watchlistRouter);
-// app.use('/api/signals',   signalsRouter);
-// app.use('/api/outcomes',  outcomesRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/stocks', stocksRouter);
+app.use('/api/watchlist', watchlistRouter);
+app.use('/api/signals', signalsRouter);
+app.use('/api/outcomes', outcomesRouter);
 
 // ─── Catch-all ───────────────────────────────────────────────────────────────
 app.use(notFound);
@@ -35,7 +38,7 @@ app.use(errorHandler);
 
 // ─── Startup ─────────────────────────────────────────────────────────────────
 async function start(): Promise<void> {
-  await redis.connect();
+  await connectRedisWithRetry();
 
   const pgClient = await pool.connect();
   try {
