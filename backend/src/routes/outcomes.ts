@@ -2,8 +2,19 @@ import { Router, Request, Response } from 'express';
 import { pool } from '../db/pool';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { ApiResponse } from '../types/index';
+import { evaluateOpenOutcomes } from '../services/outcomeTracker';
 
 const router = Router();
+
+// POST /api/outcomes/evaluate — scan OPEN outcomes and update them
+router.post(
+  '/evaluate',
+  asyncHandler(async (_req: Request, res: Response) => {
+    const summary = await evaluateOpenOutcomes();
+    const body: ApiResponse = { success: true, data: summary };
+    res.json(body);
+  }),
+);
 
 // GET /api/outcomes/stats — win rate and counts over the last N days
 router.get(
@@ -26,12 +37,21 @@ router.get(
     for (const r of rows) {
       if (r.outcome) counts[r.outcome] = parseInt(r.count, 10);
     }
-    const decided = counts.WIN + counts.LOSS + counts.BREAKEVEN;
-    const winRate = decided > 0 ? Math.round((counts.WIN / decided) * 1000) / 10 : null;
+    // Win rate is over actual trades only (WIN + LOSS). NEUTRAL settles to
+    // BREAKEVEN (no position) and must not dilute the rate.
+    const trades = counts.WIN + counts.LOSS;
+    const winRate = trades > 0 ? Math.round((counts.WIN / trades) * 1000) / 10 : null;
 
     const body: ApiResponse = {
       success: true,
-      data: { days, counts, decided, win_rate_pct: winRate },
+      data: {
+        days,
+        counts,
+        trades,
+        breakeven: counts.BREAKEVEN,
+        open: counts.OPEN,
+        win_rate_pct: winRate,
+      },
     };
     res.json(body);
   }),

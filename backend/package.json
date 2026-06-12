@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "lint": "eslint src --ext .ts",
     "gen:paper": "node scripts/generatePaperData.cjs",
-    "smoke:kite": "ts-node --transpile-only scripts/smokeKite.ts"
+    "smoke:kite": "ts-node --transpile-only scripts/smokeKite.ts",
+    "smoke:outcomes": "ts-node --transpile-only scripts/smokeOutcomes.ts"
   },
   "dependencies": {
     "axios": "^1.7.2",

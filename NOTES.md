@@ -23,6 +23,11 @@
 - [ ] instrument_token populator for LIVE — call Kite `getInstruments()` once a
       day to refresh real tokens (paper uses synthetic ones).
 
+- [ ] Schedule the outcome tracker — `evaluateOpenOutcomes()` is currently only
+      triggered manually via `POST /api/outcomes/evaluate`. Run it daily after
+      market close (cron / node-cron) so OPEN outcomes get evaluated automatically
+      (`backend/src/services/outcomeTracker.ts`).
+
 ## Fix Before Going Live (Production)
 
 - [ ] Auto-refresh Kite token at ~5:30 AM IST (before the ~6 AM expiry) so the
