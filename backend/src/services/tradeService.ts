@@ -4,8 +4,10 @@ import { getQuotes } from './quoteService';
 import { Candle } from './brokerTypes';
 import { AppError } from '../middleware/errorHandler';
 
-// Fixed notional per paper trade. Quantity = whole shares that fit in this.
+// Default notional per paper trade — quantity = whole shares that fit in this.
 export const POSITION_SIZE_INR = 10_000;
+// Hard cap: a single paper position may not exceed this notional.
+export const MAX_POSITION_SIZE_INR = 100_000;
 const HOLDING_DAYS = 10;
 
 interface SignalForTrade {
@@ -59,14 +61,35 @@ export async function createPaperTrade(
     throw new AppError(400, 'Cannot paper-trade a NEUTRAL signal');
   }
 
-  // One trade per signal — prevent double-trading.
-  const existing = await pool.query('SELECT id FROM paper_trades WHERE signal_id = $1', [signalId]);
+  // One open position per symbol per direction — a real positions book, not a
+  // log of duplicate fills.
+  const existing = await pool.query(
+    `SELECT id FROM paper_trades
+     WHERE stock_id = $1 AND trade_type = $2 AND status = 'OPEN'`,
+    [sig.stock_id, sig.signal_type],
+  );
   if (existing.rows.length > 0) {
-    throw new AppError(409, 'This signal has already been paper-traded');
+    throw new AppError(
+      409,
+      `You already hold an open ${sig.symbol} ${sig.signal_type} position`,
+    );
   }
 
   const entry = Number(sig.entry_price);
+  const maxQty = Math.max(1, Math.floor(MAX_POSITION_SIZE_INR / entry));
   const quantity = quantityOverride ?? Math.max(1, Math.floor(POSITION_SIZE_INR / entry));
+
+  // Quantity must be a positive integer within the max position notional.
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    throw new AppError(400, 'Quantity must be a positive integer');
+  }
+  if (quantity > maxQty) {
+    throw new AppError(
+      400,
+      `Quantity ${quantity} exceeds the max position of ₹${MAX_POSITION_SIZE_INR.toLocaleString('en-IN')} ` +
+        `(max ${maxQty} shares at ₹${entry.toFixed(2)})`,
+    );
+  }
 
   // Route the fill through the broker (paper mode). LIMIT at the signal's entry
   // so the recorded entry is deterministic and matches what the user confirmed.

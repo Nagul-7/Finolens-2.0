@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS stocks (
   exchange         VARCHAR(10)  NOT NULL DEFAULT 'NSE',
   sector           VARCHAR(100),
   is_active        BOOLEAN      NOT NULL DEFAULT true,
-  created_at       TIMESTAMP    NOT NULL DEFAULT NOW()
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_stocks_symbol ON stocks(symbol);
@@ -29,7 +29,7 @@ CREATE INDEX IF NOT EXISTS idx_stocks_active ON stocks(is_active);
 CREATE TABLE IF NOT EXISTS watchlist (
   id         SERIAL    PRIMARY KEY,
   stock_id   INT       NOT NULL REFERENCES stocks(id) ON DELETE CASCADE,
-  added_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+  added_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   notes      TEXT,
   UNIQUE(stock_id)
 );
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS signals (
   bb_position         VARCHAR(20)     CHECK (bb_position IN ('UPPER','MIDDLE','LOWER')),
   supertrend_signal   VARCHAR(10)     CHECK (supertrend_signal IN ('UP','DOWN')),
   reasoning           TEXT,
-  generated_at        TIMESTAMP       NOT NULL DEFAULT NOW()
+  generated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_signals_stock    ON signals(stock_id);
@@ -75,8 +75,8 @@ CREATE TABLE IF NOT EXISTS signal_outcomes (
   max_profit_pct   DECIMAL(6,2),
   max_loss_pct     DECIMAL(6,2),
   outcome          VARCHAR(20)   CHECK (outcome IN ('WIN','LOSS','BREAKEVEN','OPEN')),
-  evaluated_at     TIMESTAMP,
-  last_checked_at  TIMESTAMP
+  evaluated_at     TIMESTAMPTZ,
+  last_checked_at  TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_outcomes_signal  ON signal_outcomes(signal_id);
@@ -92,9 +92,9 @@ CREATE TABLE IF NOT EXISTS paper_trades (
   trade_type   VARCHAR(10)   NOT NULL CHECK (trade_type IN ('BUY','SELL')),
   quantity     INT           NOT NULL CHECK (quantity > 0),
   entry_price  DECIMAL(10,2) NOT NULL,
-  entry_time   TIMESTAMP     NOT NULL DEFAULT NOW(),
+  entry_time   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   exit_price   DECIMAL(10,2),
-  exit_time    TIMESTAMP,
+  exit_time    TIMESTAMPTZ,
   exit_reason  VARCHAR(50)   CHECK (exit_reason IN ('TARGET_HIT','STOP_LOSS','MANUAL','TIMEOUT')),
   pnl          DECIMAL(10,2),
   pnl_pct      DECIMAL(6,2),
@@ -113,8 +113,8 @@ CREATE TABLE IF NOT EXISTS kite_sessions (
   user_id      VARCHAR(50) UNIQUE NOT NULL,
   access_token TEXT        NOT NULL,
   public_token TEXT,
-  expires_at   TIMESTAMP   NOT NULL,
-  created_at   TIMESTAMP   NOT NULL DEFAULT NOW()
+  expires_at   TIMESTAMPTZ NOT NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ─────────────────────────────────────────────

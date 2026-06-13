@@ -59,15 +59,15 @@ export default function Intelligence() {
   const [traded, setTraded] = useState(false)
   const searchTimer = useRef(null)
 
-  // Has this signal id already been paper-traded?
-  async function refreshTraded(signalId) {
-    if (!signalId) {
+  // Is there already an OPEN position for this symbol + direction?
+  async function refreshTraded(sig) {
+    if (!sig || (sig.signal_type !== 'BUY' && sig.signal_type !== 'SELL')) {
       setTraded(false)
       return
     }
     try {
-      const trades = await api.getTrades()
-      setTraded(trades.some((t) => t.signal_id === signalId))
+      const trades = await api.getTrades('open')
+      setTraded(trades.some((t) => t.symbol === symbol && t.trade_type === sig.signal_type))
     } catch {
       setTraded(false)
     }
@@ -89,7 +89,7 @@ export default function Intelligence() {
           const full = await api.getSignal(latest.id).catch(() => null)
           const norm = normalize(full)
           setSignal(norm)
-          await refreshTraded(norm?.id)
+          await refreshTraded(norm)
         }
       })
       .catch((e) => setError(e.message))
@@ -190,7 +190,7 @@ export default function Intelligence() {
               <PaperTradePanel
                 signal={signal}
                 traded={traded}
-                onTraded={() => refreshTraded(signal.id)}
+                onTraded={() => refreshTraded(signal)}
               />
             )}
           </SignalCard>

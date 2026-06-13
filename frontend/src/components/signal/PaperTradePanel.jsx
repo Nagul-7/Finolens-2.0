@@ -5,8 +5,9 @@ import { api } from '../../lib/api'
 import { useToast } from '../ui/Toast.jsx'
 import { inr, num } from '../../lib/formatters'
 
-// Mirror of backend POSITION_SIZE_INR — default notional per paper trade.
+// Mirror of backend constants — default and max notional per paper trade.
 const POSITION_SIZE_INR = 10000
+const MAX_POSITION_SIZE_INR = 100000
 
 export function PaperTradePanel({ signal, traded, onTraded }) {
   const toast = useToast()
@@ -14,8 +15,9 @@ export function PaperTradePanel({ signal, traded, onTraded }) {
   const [submitting, setSubmitting] = useState(false)
 
   const entry = num(signal.entry_price) ?? 0
+  const maxQty = Math.max(1, Math.floor(MAX_POSITION_SIZE_INR / (entry || 1)))
   const defaultQty = Math.max(1, Math.floor(POSITION_SIZE_INR / (entry || 1)))
-  const [qty, setQty] = useState(defaultQty)
+  const [qty, setQty] = useState(String(defaultQty))
 
   // Only BUY / SELL are tradeable.
   if (signal.signal_type !== 'BUY' && signal.signal_type !== 'SELL') return null
@@ -24,16 +26,30 @@ export function PaperTradePanel({ signal, traded, onTraded }) {
     return (
       <div className="text-label text-text-dim flex items-center gap-2">
         <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-        Paper trade placed for this signal
+        You hold an open {signal.signal_type} position — see Portfolio
       </div>
     )
   }
 
+  // Keep only digits, drop leading zeros — rejects "000", "1e5", "-5", "10.5".
+  function onQtyChange(raw) {
+    const digits = raw.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '')
+    setQty(digits)
+  }
+
+  const qtyNum = qty === '' ? 0 : Number(qty)
+  let qtyError = null
+  if (qtyNum < 1) qtyError = 'Enter a positive whole number of shares'
+  else if (qtyNum > maxQty)
+    qtyError = `Max ${maxQty} shares (₹${MAX_POSITION_SIZE_INR.toLocaleString('en-IN')} cap)`
+  const valid = qtyError === null
+
   async function confirm() {
+    if (!valid) return
     setSubmitting(true)
     try {
-      await api.createTrade(signal.id, Number(qty))
-      toast(`Paper ${signal.signal_type} placed — ${qty} share${qty > 1 ? 's' : ''}`)
+      await api.createTrade(signal.id, qtyNum)
+      toast(`Paper ${signal.signal_type} placed — ${qtyNum} share${qtyNum > 1 ? 's' : ''}`)
       setOpen(false)
       onTraded?.()
     } catch (e) {
@@ -51,7 +67,7 @@ export function PaperTradePanel({ signal, traded, onTraded }) {
     )
   }
 
-  const notional = inr((num(qty) ?? 0) * entry)
+  const notional = inr(qtyNum * entry)
 
   return (
     <div className="space-y-3">
@@ -63,20 +79,20 @@ export function PaperTradePanel({ signal, traded, onTraded }) {
       <div>
         <div className="text-label text-muted mb-1">QUANTITY</div>
         <Input
-          type="number"
-          min="1"
+          type="text"
+          inputMode="numeric"
           value={qty}
-          onChange={(e) => setQty(e.target.value)}
-          className="w-full tabular-nums"
+          onChange={(e) => onQtyChange(e.target.value)}
+          className={`w-full tabular-nums ${qtyError ? 'border-negative' : ''}`}
         />
-        <div className="text-label text-text-dim mt-1">≈ {notional} notional</div>
+        {qtyError ? (
+          <div className="text-label text-negative mt-1">{qtyError}</div>
+        ) : (
+          <div className="text-label text-text-dim mt-1">≈ {notional} notional</div>
+        )}
       </div>
       <div className="flex gap-2">
-        <Button
-          className="flex-1"
-          onClick={confirm}
-          disabled={submitting || !qty || Number(qty) < 1}
-        >
+        <Button className="flex-1" onClick={confirm} disabled={submitting || !valid}>
           {submitting ? 'Placing…' : `Confirm ${signal.signal_type}`}
         </Button>
         <Button variant="ghost" onClick={() => setOpen(false)} disabled={submitting}>

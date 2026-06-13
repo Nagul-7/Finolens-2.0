@@ -32,14 +32,23 @@ export function outcomeColor(outcome) {
   return 'text-text-dim'
 }
 
+// All timestamps from the API are UTC (timestamptz). Display in IST consistently
+// regardless of the viewer's browser timezone.
+const IST = 'Asia/Kolkata'
+
 export function shortDate(v) {
   if (!v) return '—'
-  return new Date(v).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+  return new Date(v).toLocaleDateString('en-IN', {
+    timeZone: IST,
+    day: '2-digit',
+    month: 'short',
+  })
 }
 
 export function dateTime(v) {
   if (!v) return '—'
   return new Date(v).toLocaleString('en-IN', {
+    timeZone: IST,
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
