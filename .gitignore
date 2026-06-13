@@ -40,3 +40,7 @@ redis_data/
 coverage/
 .coverage
 htmlcov/
+
+# yfinance daily cache
+.cache/
+signal-service/.cache/

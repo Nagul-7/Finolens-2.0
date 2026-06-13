@@ -1,0 +1,27 @@
+{
+  "note": "Symbol -> synthetic instrument_token -> yfinance ticker map. Tokens match the DB (populated from here). Paper mode uses real NSE data via these .NS tickers.",
+  "instruments": [
+    { "symbol": "RELIANCE",   "token": 738561,  "ticker": "RELIANCE.NS",   "name": "Reliance Industries Ltd",       "sector": "Energy" },
+    { "symbol": "TCS",        "token": 2953217, "ticker": "TCS.NS",        "name": "Tata Consultancy Services Ltd", "sector": "Technology" },
+    { "symbol": "HDFCBANK",   "token": 341249,  "ticker": "HDFCBANK.NS",   "name": "HDFC Bank Ltd",                 "sector": "Banking" },
+    { "symbol": "INFY",       "token": 408065,  "ticker": "INFY.NS",       "name": "Infosys Ltd",                   "sector": "Technology" },
+    { "symbol": "ICICIBANK",  "token": 1270529, "ticker": "ICICIBANK.NS",  "name": "ICICI Bank Ltd",                "sector": "Banking" },
+    { "symbol": "HINDUNILVR", "token": 356865,  "ticker": "HINDUNILVR.NS", "name": "Hindustan Unilever Ltd",        "sector": "FMCG" },
+    { "symbol": "ITC",        "token": 424961,  "ticker": "ITC.NS",        "name": "ITC Ltd",                       "sector": "FMCG" },
+    { "symbol": "SBIN",       "token": 779521,  "ticker": "SBIN.NS",       "name": "State Bank of India",           "sector": "Banking" },
+    { "symbol": "BAJFINANCE", "token": 81153,   "ticker": "BAJFINANCE.NS", "name": "Bajaj Finance Ltd",             "sector": "Finance" },
+    { "symbol": "BHARTIARTL", "token": 2714625, "ticker": "BHARTIARTL.NS", "name": "Bharti Airtel Ltd",             "sector": "Telecom" },
+    { "symbol": "KOTAKBANK",  "token": 492033,  "ticker": "KOTAKBANK.NS",  "name": "Kotak Mahindra Bank Ltd",       "sector": "Banking" },
+    { "symbol": "LT",         "token": 2939649, "ticker": "LT.NS",         "name": "Larsen & Toubro Ltd",           "sector": "Infrastructure" },
+    { "symbol": "HCLTECH",    "token": 1850625, "ticker": "HCLTECH.NS",    "name": "HCL Technologies Ltd",          "sector": "Technology" },
+    { "symbol": "ASIANPAINT", "token": 60417,   "ticker": "ASIANPAINT.NS", "name": "Asian Paints Ltd",              "sector": "Consumer" },
+    { "symbol": "AXISBANK",   "token": 1510401, "ticker": "AXISBANK.NS",   "name": "Axis Bank Ltd",                 "sector": "Banking" },
+    { "symbol": "MARUTI",     "token": 2815745, "ticker": "MARUTI.NS",     "name": "Maruti Suzuki India Ltd",       "sector": "Automobile" },
+    { "symbol": "SUNPHARMA",  "token": 857857,  "ticker": "SUNPHARMA.NS",  "name": "Sun Pharmaceutical Industries", "sector": "Pharma" },
+    { "symbol": "TITAN",      "token": 897537,  "ticker": "TITAN.NS",      "name": "Titan Company Ltd",             "sector": "Consumer" },
+    { "symbol": "WIPRO",      "token": 969473,  "ticker": "WIPRO.NS",      "name": "Wipro Ltd",                     "sector": "Technology" },
+    { "symbol": "ULTRACEMCO", "token": 2952193, "ticker": "ULTRACEMCO.NS", "name": "UltraTech Cement Ltd",          "sector": "Materials" },
+    { "symbol": "NIFTY50",    "token": 256265,  "ticker": "^NSEI",         "name": "NIFTY 50 Index",                "sector": "Index" },
+    { "symbol": "BANKNIFTY",  "token": 260105,  "ticker": "^NSEBANK",      "name": "NIFTY Bank Index",              "sector": "Index" }
+  ]
+}

@@ -7,18 +7,13 @@
  *   ts-node --transpile-only scripts/smokeOutcomes.ts
  */
 import assert from 'assert';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import { pool } from '../src/db/pool';
 import { evaluateOpenOutcomes } from '../src/services/outcomeTracker';
+import { PaperBroker } from '../src/services/kiteClient';
 
-interface PaperFile {
-  symbols: Record<string, { instrument_token: number; candles: { date: string; close: number }[] }>;
-}
-
-const paper = JSON.parse(
-  readFileSync(join(__dirname, '..', 'src', 'data', 'nse_paper_data.json'), 'utf-8'),
-) as PaperFile;
+const RELIANCE_TOKEN = 738561;
+const broker = new PaperBroker();
+let candles: { date: string; close: number }[] = [];
 
 let passed = 0;
 function check(name: string, fn: () => void): void {
@@ -39,8 +34,7 @@ async function insertSignal(
   stop: number | null,
   target: number | null,
 ): Promise<number> {
-  const sym = paper.symbols[symbol];
-  const candle = sym.candles[sym.candles.length - dateIndexFromEnd];
+  const candle = candles[candles.length - dateIndexFromEnd];
   const entry = candle.close;
   const stockRes = await pool.query<{ id: number }>('SELECT id FROM stocks WHERE symbol = $1', [symbol]);
   const stockId = stockRes.rows[0].id;
@@ -72,9 +66,9 @@ async function outcomeOf(signalId: number): Promise<{ outcome: string; p1: numbe
 }
 
 async function main(): Promise<void> {
-  const reliance = paper.symbols.RELIANCE;
-  const entryWin = reliance.candles[reliance.candles.length - 30].close;
-  const entryLoss = reliance.candles[reliance.candles.length - 30].close;
+  candles = await broker.getHistoricalData(RELIANCE_TOKEN, '2000-01-01', '2100-01-01', 'day');
+  const entryWin = candles[candles.length - 30].close;
+  const entryLoss = entryWin;
 
   // BUY, target just above entry (first up-tick wins), stop far below
   const buyWin = await insertSignal('RELIANCE', 'BUY', 30, entryLoss * 0.5, entryWin + 0.01);

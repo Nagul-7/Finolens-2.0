@@ -1,7 +1,7 @@
 import time
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -70,3 +70,26 @@ async def signal(request: SignalRequest) -> ApiResponse[SignalResponse]:
 
     result = generate_signal(request)
     return ApiResponse(success=True, data=result)
+
+
+# ─── Real NSE data (yfinance, cached) ────────────────────────────────────────
+@app.get("/data/candles")
+async def data_candles(symbol: str, days: int = 400) -> ApiResponse[list[dict]]:
+    """Daily OHLCV for a yfinance ticker (e.g. RELIANCE.NS, ^NSEI)."""
+    from .data_source import get_candles
+
+    try:
+        candles = get_candles(symbol, days=days)
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+    return ApiResponse(success=True, data=candles)
+
+
+@app.get("/data/ltp")
+async def data_ltp(symbols: str) -> ApiResponse[dict]:
+    """Last price per ticker. `symbols` is comma-separated. Missing -> null."""
+    from .data_source import get_ltp
+
+    tickers = [s.strip() for s in symbols.split(",") if s.strip()]
+    quotes = {t: get_ltp(t) for t in tickers}
+    return ApiResponse(success=True, data=quotes)

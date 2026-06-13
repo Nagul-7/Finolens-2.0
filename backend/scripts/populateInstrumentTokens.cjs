@@ -15,16 +15,16 @@ async function main() {
     console.error('DATABASE_URL is required');
     process.exit(1);
   }
-  const file = path.join(__dirname, '..', 'src', 'data', 'nse_paper_data.json');
-  const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  const file = path.join(__dirname, '..', 'src', 'data', 'nse_instruments.json');
+  const { instruments } = JSON.parse(fs.readFileSync(file, 'utf-8'));
   const pool = new Pool({ connectionString: dbUrl });
 
   let updated = 0;
   try {
-    for (const [symbol, info] of Object.entries(data.symbols)) {
+    for (const inst of instruments) {
       const { rowCount } = await pool.query(
         'UPDATE stocks SET instrument_token = $1 WHERE symbol = $2',
-        [info.instrument_token, symbol],
+        [inst.token, inst.symbol],
       );
       updated += rowCount;
     }

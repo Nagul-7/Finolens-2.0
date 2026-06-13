@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import axios from 'axios';
 
 import {
   Broker,
@@ -12,27 +13,45 @@ import {
   OrderResponse,
 } from './brokerTypes';
 
-// ─── Paper data (loaded once, lazily) ─────────────────────────────────────────
-interface PaperFile {
-  generated_at: string;
-  interval: string;
-  symbols: Record<string, { instrument_token: number; candles: Candle[] }>;
+// ─── Instrument map (symbol <-> synthetic token <-> yfinance ticker) ──────────
+interface Instrument {
+  symbol: string;
+  token: number;
+  ticker: string;
+  name: string;
+  sector: string;
 }
 
-let paperData: PaperFile | null = null;
-let tokenToSymbol: Map<number, string> | null = null;
+let byToken: Map<number, Instrument> | null = null;
+let bySymbol: Map<string, Instrument> | null = null;
 
-function loadPaperData(): PaperFile {
-  if (paperData) return paperData;
-  const file = join(__dirname, '..', 'data', 'nse_paper_data.json');
-  paperData = JSON.parse(readFileSync(file, 'utf-8')) as PaperFile;
-  tokenToSymbol = new Map(
-    Object.entries(paperData.symbols).map(([sym, v]) => [v.instrument_token, sym]),
-  );
-  return paperData;
+function loadInstruments(): void {
+  if (byToken && bySymbol) return;
+  const file = join(__dirname, '..', 'data', 'nse_instruments.json');
+  const parsed = JSON.parse(readFileSync(file, 'utf-8')) as { instruments: Instrument[] };
+  byToken = new Map(parsed.instruments.map((i) => [i.token, i]));
+  bySymbol = new Map(parsed.instruments.map((i) => [i.symbol, i]));
 }
 
-// ─── Paper broker ──────────────────────────────────────────────────────────────
+function tickerForToken(token: number): string {
+  loadInstruments();
+  const inst = byToken?.get(token);
+  if (!inst) throw new Error(`Unknown instrument_token ${token} (not in nse_instruments.json)`);
+  return inst.ticker;
+}
+
+function tickerForSymbol(symbol: string): string {
+  loadInstruments();
+  const inst = bySymbol?.get(symbol);
+  // Default to the NSE equity convention for symbols not explicitly mapped.
+  return inst ? inst.ticker : `${symbol}.NS`;
+}
+
+// ─── Paper broker — real NSE data via the Python data service ─────────────────
+// Same Broker interface as live; prices are real (yfinance, cached) but no order
+// ever leaves the building.
+const DATA_URL = process.env.SIGNAL_SERVICE_URL ?? 'http://localhost:8000';
+
 export class PaperBroker implements Broker {
   readonly mode = 'paper' as const;
 
@@ -45,26 +64,38 @@ export class PaperBroker implements Broker {
     if (interval !== 'day') {
       throw new Error(`Paper mode only supports daily data, got '${interval}'`);
     }
-    const data = loadPaperData();
-    const symbol = tokenToSymbol?.get(instrumentToken);
-    if (!symbol) {
-      throw new Error(`No paper data for instrument_token ${instrumentToken}`);
+    const ticker = tickerForToken(instrumentToken);
+    try {
+      const resp = await axios.get(`${DATA_URL}/data/candles`, {
+        params: { symbol: ticker, days: 400 },
+        timeout: 20_000,
+      });
+      const candles = (resp.data?.data ?? []) as Candle[];
+      return candles.filter((c) => c.date >= from && c.date <= to);
+    } catch (err) {
+      const msg = axios.isAxiosError(err) ? (err.code ?? err.message) : String(err);
+      throw new Error(`Data service unavailable for ${ticker}: ${msg}`);
     }
-    return data.symbols[symbol].candles.filter(
-      (c) => c.date >= from && c.date <= to,
-    );
   }
 
   async getLTP(symbols: string[]): Promise<LTPQuote> {
-    const data = loadPaperData();
-    const quote: LTPQuote = {};
-    for (const sym of symbols) {
-      const entry = data.symbols[sym];
-      if (!entry) {
-        throw new Error(`No paper data for symbol '${sym}'`);
-      }
-      quote[sym] = entry.candles[entry.candles.length - 1].close;
+    const tickers = symbols.map(tickerForSymbol);
+    let raw: Record<string, number | null> = {};
+    try {
+      const resp = await axios.get(`${DATA_URL}/data/ltp`, {
+        params: { symbols: tickers.join(',') },
+        timeout: 20_000,
+      });
+      raw = (resp.data?.data ?? {}) as Record<string, number | null>;
+    } catch (err) {
+      const msg = axios.isAxiosError(err) ? (err.code ?? err.message) : String(err);
+      throw new Error(`Data service unavailable: ${msg}`);
     }
+    const quote: LTPQuote = {};
+    symbols.forEach((sym, i) => {
+      const price = raw[tickers[i]];
+      if (price !== null && price !== undefined) quote[sym] = price;
+    });
     return quote;
   }
 
@@ -74,6 +105,9 @@ export class PaperBroker implements Broker {
     if (params.order_type === 'MARKET') {
       const ltp = await this.getLTP([params.tradingsymbol]);
       fillPrice = ltp[params.tradingsymbol];
+      if (fillPrice === undefined) {
+        throw new Error(`No live price to fill MARKET order for ${params.tradingsymbol}`);
+      }
     }
     if (params.order_type === 'LIMIT' && params.price === undefined) {
       throw new Error('LIMIT order requires a price');

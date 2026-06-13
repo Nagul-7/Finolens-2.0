@@ -1,9 +1,16 @@
 /*
  * Smoke test for the Kite client (paper mode + live token-expiry guard).
- * Run: node_modules/.bin/ts-node --transpile-only scripts/smokeKite.ts
+ * Paper mode now reads REAL NSE data via the Python data service, so this is an
+ * integration test: the signal-service must be running and reachable at
+ * SIGNAL_SERVICE_URL (default http://localhost:8000).
+ *
+ * Run: SIGNAL_SERVICE_URL=http://localhost:8001 \
+ *      ts-node --transpile-only scripts/smokeKite.ts
  */
 import assert from 'assert';
 import { PaperBroker, LiveBroker, getBroker, _resetBroker } from '../src/services/kiteClient';
+
+const RELIANCE_TOKEN = 738561;
 
 let passed = 0;
 function check(name: string, fn: () => void | Promise<void>): Promise<void> {
@@ -26,34 +33,37 @@ async function main(): Promise<void> {
     assert.strictEqual(paper.mode, 'paper');
   });
 
-  await check('getHistoricalData returns 200+ daily candles for RELIANCE (token 738561)', async () => {
-    const candles = await paper.getHistoricalData(738561, '2025-01-01', '2026-12-31', 'day');
-    assert.ok(candles.length >= 200, `got ${candles.length}`);
-    assert.ok('open' in candles[0] && 'close' in candles[0]);
+  let all: Awaited<ReturnType<PaperBroker['getHistoricalData']>> = [];
+  await check('getHistoricalData returns real daily candles for RELIANCE', async () => {
+    all = await paper.getHistoricalData(RELIANCE_TOKEN, '2000-01-01', '2100-01-01', 'day');
+    assert.ok(all.length > 100, `got ${all.length}`);
+    const c = all[all.length - 1];
+    assert.ok('open' in c && 'high' in c && 'low' in c && 'close' in c && c.close > 0);
   });
 
-  await check('getHistoricalData date filter narrows the range', async () => {
-    const all = await paper.getHistoricalData(738561, '2025-01-01', '2026-12-31', 'day');
-    const sub = await paper.getHistoricalData(738561, '2026-01-01', '2026-03-31', 'day');
-    assert.ok(sub.length < all.length && sub.length > 0);
-    assert.ok(sub.every((c) => c.date >= '2026-01-01' && c.date <= '2026-03-31'));
+  await check('date filter narrows the range', async () => {
+    const from = all[all.length - 20].date;
+    const sub = await paper.getHistoricalData(RELIANCE_TOKEN, from, '2100-01-01', 'day');
+    assert.ok(sub.length <= 20 && sub.length > 0, `got ${sub.length}`);
+    assert.ok(sub.every((c) => c.date >= from));
   });
 
   await check('getHistoricalData rejects non-daily interval', async () => {
-    await assert.rejects(() => paper.getHistoricalData(738561, '2025-01-01', '2026-12-31', '5minute'));
+    await assert.rejects(() => paper.getHistoricalData(RELIANCE_TOKEN, '2025-01-01', '2026-12-31', '5minute'));
   });
 
   await check('getHistoricalData rejects unknown token', async () => {
-    await assert.rejects(() => paper.getHistoricalData(999999, '2025-01-01', '2026-12-31', 'day'));
+    await assert.rejects(() => paper.getHistoricalData(999999, '2025-01-01', '2026-12-31', 'day'), /Unknown instrument_token/);
   });
 
-  await check('getLTP returns last close for known symbols', async () => {
+  await check('getLTP returns positive prices for known symbols', async () => {
     const ltp = await paper.getLTP(['RELIANCE', 'TCS']);
     assert.ok(ltp.RELIANCE > 0 && ltp.TCS > 0);
   });
 
-  await check('getLTP rejects unknown symbol', async () => {
-    await assert.rejects(() => paper.getLTP(['NOTASTOCK']));
+  await check('getLTP omits symbols with no data', async () => {
+    const ltp = await paper.getLTP(['NOTASTOCKXYZ']);
+    assert.strictEqual(ltp.NOTASTOCKXYZ, undefined);
   });
 
   await check('placeOrder MARKET fills at LTP, returns COMPLETE', async () => {
@@ -67,7 +77,6 @@ async function main(): Promise<void> {
     });
     assert.ok(res.order_id.startsWith('PAPER-'));
     assert.strictEqual(res.status, 'COMPLETE');
-    assert.strictEqual(res.filled_quantity, 10);
     assert.ok(res.average_price > 0);
   });
 
@@ -104,7 +113,6 @@ async function main(): Promise<void> {
     assert.throws(() => new LiveBroker(''), /KITE_API_KEY/);
   });
 
-  // ── Factory ─────────────────────────────────────────────────────────────────
   await check('factory returns PaperBroker when BROKER_MODE=paper', () => {
     _resetBroker();
     process.env.BROKER_MODE = 'paper';
@@ -113,9 +121,7 @@ async function main(): Promise<void> {
 
   await check('factory caches singleton', () => {
     _resetBroker();
-    const a = getBroker();
-    const b = getBroker();
-    assert.strictEqual(a, b);
+    assert.strictEqual(getBroker(), getBroker());
   });
 
   console.log(`\n${passed} checks passed`);

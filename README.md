@@ -47,10 +47,15 @@ Open http://localhost:5173.
 
 ## Modes
 
-`BROKER_MODE=paper` (default) serves synthetic OHLCV from
-`backend/src/data/nse_paper_data.json`. `BROKER_MODE=live` uses Kite Connect
-(requires `KITE_API_KEY` and an auth flow — paper mode is the supported path
-for now).
+`BROKER_MODE=paper` (default) serves **real NSE daily data** via yfinance: the
+Python signal-service fetches and caches it (`/data/candles`, `/data/ltp`, daily
+disk cache under `signal-service/.cache/`), and the Node `PaperBroker` consumes
+it over HTTP. Symbols map to `.NS` tickers via `backend/src/data/nse_instruments.json`.
+Still paper trading — real prices, no real orders, no money. `BROKER_MODE=live`
+uses Kite Connect (requires `KITE_API_KEY` + auth flow).
+
+The old synthetic generator (`scripts/generatePaperData.cjs`,
+`nse_paper_data.json`) is legacy and no longer wired in.
 
 ## Tests
 
