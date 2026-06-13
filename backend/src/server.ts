@@ -13,6 +13,7 @@ import signalsRouter from './routes/signals';
 import outcomesRouter from './routes/outcomes';
 import tradesRouter from './routes/trades';
 import authRouter from './routes/auth';
+import { startScheduler } from './services/scheduler';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -53,6 +54,10 @@ async function start(): Promise<void> {
   app.listen(PORT, () => {
     console.log(`[server] listening on port ${PORT}`);
   });
+
+  if (process.env.ENABLE_SCHEDULER !== 'false') {
+    startScheduler();
+  }
 }
 
 // ─── Graceful shutdown ───────────────────────────────────────────────────────

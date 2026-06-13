@@ -1,7 +1,7 @@
 /*
- * Populate stocks.instrument_token from the paper data file.
+ * Populate stocks.instrument_token from nse_instruments.json (symbol -> token).
  * In live mode this would instead pull from Kite getInstruments(); for paper
- * mode the synthetic tokens in nse_paper_data.json are the source of truth.
+ * mode these synthetic tokens map to .NS yfinance tickers in the broker.
  *
  * Usage: DATABASE_URL=... node scripts/populateInstrumentTokens.cjs
  */

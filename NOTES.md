@@ -23,10 +23,10 @@
 - [ ] instrument_token populator for LIVE — call Kite `getInstruments()` once a
       day to refresh real tokens (paper uses synthetic ones).
 
-- [ ] Schedule the outcome tracker — `evaluateOpenOutcomes()` is currently only
-      triggered manually via `POST /api/outcomes/evaluate`. Run it daily after
-      market close (cron / node-cron) so OPEN outcomes get evaluated automatically
-      (`backend/src/services/outcomeTracker.ts`).
+- [x] Schedule the outcome + trade evaluators — `scheduler.ts` runs a daily
+      post-close job at 16:00 IST (Mon–Fri, skips NSE holidays): warms the
+      yfinance cache for all active stocks, then runs `evaluateOpenOutcomes()`
+      and `evaluatePaperTrades()`. Manual run: `npm run job:daily`.
 
 ## Fix Before Going Live (Production)
 
