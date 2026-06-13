@@ -42,6 +42,14 @@ export const api = {
   getOutcomeStats: (days = 30) => request(`/outcomes/stats?days=${days}`),
   getOutcomes: (limit = 20) => request(`/outcomes?limit=${limit}`),
 
+  // Paper trades
+  getTrades: (status) => request(`/trades${status ? `?status=${status}` : ''}`),
+  getTradeStats: () => request('/trades/stats'),
+  createTrade: (signalId, quantity) =>
+    request('/trades', { method: 'POST', body: JSON.stringify({ signalId, quantity }) }),
+  closeTrade: (id) => request(`/trades/${id}/close`, { method: 'POST' }),
+  evaluateTrades: () => request('/trades/evaluate', { method: 'POST' }),
+
   // Auth
   getAuthStatus: () => request('/auth/status'),
 }

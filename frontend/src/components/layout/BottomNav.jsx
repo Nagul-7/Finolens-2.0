@@ -5,7 +5,7 @@ import { TABS } from './TopBar.jsx'
 export function BottomNav() {
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-20 bg-surface/95 backdrop-blur border-t border-border">
-      <div className="grid grid-cols-4">
+      <div className="grid grid-cols-5">
         {TABS.map((t) => (
           <NavLink
             key={t.to}

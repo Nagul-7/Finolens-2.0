@@ -2,7 +2,7 @@ import { Card, CardLabel } from '../ui/Card'
 import { ConfidenceBar } from './ConfidenceBar'
 import { inr, signalColor } from '../../lib/formatters'
 
-export function SignalCard({ signal }) {
+export function SignalCard({ signal, children }) {
   if (!signal) {
     return (
       <Card className="p-4">
@@ -30,6 +30,8 @@ export function SignalCard({ signal }) {
         <Metric label="STOP" value={inr(suggested_stop_loss)} />
         <Metric label="TARGET" value={inr(suggested_target)} />
       </div>
+
+      {children && <div className="pt-1 border-t border-border">{children}</div>}
     </Card>
   )
 }

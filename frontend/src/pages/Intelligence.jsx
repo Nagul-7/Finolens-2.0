@@ -6,6 +6,7 @@ import { Input } from '../components/ui/Input.jsx'
 import { Skeleton } from '../components/ui/Skeleton.jsx'
 import { PriceChart } from '../components/charts/PriceChart.jsx'
 import { SignalCard } from '../components/signal/SignalCard.jsx'
+import { PaperTradePanel } from '../components/signal/PaperTradePanel.jsx'
 import { api } from '../lib/api'
 import { num } from '../lib/formatters'
 
@@ -15,6 +16,7 @@ function normalize(s) {
   if (!s) return null
   if (s.indicators) {
     return {
+      id: s.id,
       signal_type: s.signal_type,
       confidence: s.confidence,
       entry_price: s.entry_price,
@@ -25,6 +27,7 @@ function normalize(s) {
     }
   }
   return {
+    id: s.id,
     signal_type: s.signal_type,
     confidence: s.confidence,
     entry_price: s.entry_price,
@@ -53,7 +56,22 @@ export default function Intelligence() {
   const [error, setError] = useState(null)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
+  const [traded, setTraded] = useState(false)
   const searchTimer = useRef(null)
+
+  // Has this signal id already been paper-traded?
+  async function refreshTraded(signalId) {
+    if (!signalId) {
+      setTraded(false)
+      return
+    }
+    try {
+      const trades = await api.getTrades()
+      setTraded(trades.some((t) => t.signal_id === signalId))
+    } catch {
+      setTraded(false)
+    }
+  }
 
   // Load candles + latest existing signal when the symbol changes.
   useEffect(() => {
@@ -62,13 +80,16 @@ export default function Intelligence() {
     setError(null)
     setSignal(null)
     setCandles(null)
+    setTraded(false)
     Promise.all([api.getCandles(symbol), api.getSignals(1, symbol).catch(() => [])])
       .then(async ([c, sigs]) => {
         setCandles(c)
         const latest = Array.isArray(sigs) ? sigs.find((x) => x.symbol === symbol) : null
         if (latest) {
           const full = await api.getSignal(latest.id).catch(() => null)
-          setSignal(normalize(full))
+          const norm = normalize(full)
+          setSignal(norm)
+          await refreshTraded(norm?.id)
         }
       })
       .catch((e) => setError(e.message))
@@ -94,6 +115,7 @@ export default function Intelligence() {
     try {
       const s = await api.generateSignal(symbol)
       setSignal(normalize(s))
+      setTraded(false) // a freshly generated signal has no trade yet
     } catch (e) {
       setError(e.message)
     } finally {
@@ -163,7 +185,15 @@ export default function Intelligence() {
 
         {/* Right 30% on desktop — signal + indicators (below chart on mobile) */}
         <div className="lg:col-span-3 space-y-4">
-          <SignalCard signal={signal} />
+          <SignalCard signal={signal}>
+            {signal && (
+              <PaperTradePanel
+                signal={signal}
+                traded={traded}
+                onTraded={() => refreshTraded(signal.id)}
+              />
+            )}
+          </SignalCard>
           <IndicatorsPanel ind={signal?.ind} />
         </div>
       </div>

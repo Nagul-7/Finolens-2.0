@@ -11,6 +11,7 @@ import stocksRouter from './routes/stocks';
 import watchlistRouter from './routes/watchlist';
 import signalsRouter from './routes/signals';
 import outcomesRouter from './routes/outcomes';
+import tradesRouter from './routes/trades';
 import authRouter from './routes/auth';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
@@ -31,6 +32,7 @@ app.use('/api/stocks', stocksRouter);
 app.use('/api/watchlist', watchlistRouter);
 app.use('/api/signals', signalsRouter);
 app.use('/api/outcomes', outcomesRouter);
+app.use('/api/trades', tradesRouter);
 
 // ─── Catch-all ───────────────────────────────────────────────────────────────
 app.use(notFound);

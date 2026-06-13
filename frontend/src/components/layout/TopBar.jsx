@@ -4,6 +4,7 @@ export const TABS = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/watchlist', label: 'Watchlist' },
   { to: '/intelligence', label: 'Intelligence' },
+  { to: '/portfolio', label: 'Portfolio' },
   { to: '/settings', label: 'Settings' },
 ]
 
