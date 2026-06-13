@@ -4,15 +4,42 @@ Personal stock-market intelligence and paper-trading platform for NSE India
 swing trading. Clean rebuild: corrected signal engine (ADX, no VWAP), outcome
 tracking baked in from day one, and a minimal Kite-inspired dark UI.
 
+## Start / Stop (one command)
+
+```bash
+./start.sh     # brings up infra + all services, waits for health, opens the app
+./stop.sh      # cleanly stops everything (data is preserved)
+```
+
+Or double-click **FinoLens** on the desktop (see "Desktop shortcut" below).
+`start.sh` is safe to re-run — it won't double-start. If a service fails to come
+up, start.sh says which one and points you to its log in `.run/*.log`
+(`.run/backend.log`, `.run/signal.log`, `.run/frontend.log`); fix the cause and
+re-run `./start.sh`. To reset hard: `./stop.sh && ./start.sh`.
+
+**Desktop shortcut (Linux):** copy `FinoLens.desktop` to your desktop and mark it
+trusted:
+```bash
+cp FinoLens.desktop ~/Desktop/ && chmod +x ~/Desktop/FinoLens.desktop
+cp FinoLens.desktop ~/.local/share/applications/   # also show it in the app menu
+```
+On GNOME, right-click the desktop icon → "Allow Launching" the first time.
+**Windows equivalent:** `docker compose up -d` for infra, then run the backend
+(`npm run dev`), signal-service (`uvicorn app.main:app`), and frontend
+(`npm run dev`) in three terminals, and open http://localhost:5173.
+
 ## Stack
+
+The local dev stack (what `start.sh` runs) uses non-default ports to avoid
+clashing with other local Postgres/Redis:
 
 | Service | Tech | Port |
 |---|---|---|
 | frontend | React 18 + Vite + Tailwind | 5173 |
 | backend | Node + Express + TypeScript (CommonJS) | 3001 |
-| signal-service | Python + FastAPI + pandas/numpy | 8000 |
-| db | PostgreSQL 16 | 5432 |
-| cache | Redis 7 | 6379 |
+| signal-service | Python + FastAPI + pandas/numpy | 8001 |
+| db | PostgreSQL 16 (container `finolens_v2_postgres`) | 5434 |
+| cache | Redis 7 (container `finolens_v2_redis`) | 6381 |
 
 ## Quick start (Docker)
 

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=FinoLens
+Comment=Start the FinoLens trading stack and open the app
+Exec=bash -c "cd '/home/nagul/Desktop/Finolens 2.0' && ./start.sh; echo; echo 'Press Enter to close…'; read"
+Icon=/home/nagul/Desktop/Finolens 2.0/assets/finolens.svg
+Terminal=true
+Categories=Office;Finance;

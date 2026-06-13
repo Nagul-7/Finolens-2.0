@@ -44,3 +44,6 @@ htmlcov/
 # yfinance daily cache
 .cache/
 signal-service/.cache/
+
+# start.sh runtime pids/logs
+.run/
